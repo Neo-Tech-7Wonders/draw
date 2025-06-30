@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hi-Tech Image Editor</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #1e1e1e;
+      color: white;
+    }
+    #toolbar {
+      padding: 10px;
+      background-color: #333;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    canvas {
+      border: 1px solid #999;
+      display: block;
+      margin: 0 auto;
+      background-color: #fff;
+      cursor: crosshair;
+    }
+    button {
+      padding: 5px 10px;
+      background-color: #555;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #777;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <input type="color" id="colorPicker" />
+    <input type="range" id="brushSize" min="1" max="50" />
+    <label>W:<input type="number" id="canvasWidth" value="800" /></label>
+    <label>H:<input type="number" id="canvasHeight" value="600" /></label>
+    <button onclick="resizeCanvas()">Resize</button>
+    <button onclick="startNewFile()">New</button>
+    <input type="file" id="fileLoader" accept="image/*" />
+    <button onclick="setMode('brush')">Paint</button>
+    <button onclick="setMode('rect')">Rectangle</button>
+    <button onclick="setMode('circle')">Circle</button>
+    <button onclick="setMode('triangle')">Triangle</button>
+    <button onclick="saveImage()">Save</button>
+  </div>
+
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const colorPicker = document.getElementById('colorPicker');
+    const brushSize = document.getElementById('brushSize');
+    const fileLoader = document.getElementById('fileLoader');
+    const canvasWidth = document.getElementById('canvasWidth');
+    const canvasHeight = document.getElementById('canvasHeight');
+
+    let isDrawing = false;
+    let mode = 'brush';
+    let startX = 0, startY = 0;
+
+    function setMode(m) {
+      mode = m;
+    }
+
+    function startNewFile() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function resizeCanvas() {
+      const newW = parseInt(canvasWidth.value);
+      const newH = parseInt(canvasHeight.value);
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(canvas, 0, 0);
+
+      canvas.width = newW;
+      canvas.height = newH;
+      ctx.drawImage(tempCanvas, 0, 0, newW, newH);
+    }
+
+    canvas.addEventListener('mousedown', e => {
+      isDrawing = true;
+      [startX, startY] = [e.offsetX, e.offsetY];
+      if (mode === 'brush') {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+      }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (!isDrawing || mode !== 'brush') return;
+      ctx.strokeStyle = colorPicker.value;
+      ctx.lineWidth = brushSize.value;
+      ctx.lineCap = 'round';
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+    });
+
+    canvas.addEventListener('mouseup', e => {
+      if (!isDrawing) return;
+      isDrawing = false;
+
+      const endX = e.offsetX;
+      const endY = e.offsetY;
+      const width = endX - startX;
+      const height = endY - startY;
+
+      ctx.fillStyle = colorPicker.value;
+
+      if (mode === 'rect') {
+        ctx.fillRect(startX, startY, width, height);
+      } else if (mode === 'circle') {
+        const radius = Math.sqrt(width ** 2 + height ** 2) / 2;
+        const centerX = startX + width / 2;
+        const centerY = startY + height / 2;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        ctx.fill();
+      } else if (mode === 'triangle') {
+        ctx.beginPath();
+        ctx.moveTo(startX + width / 2, startY);
+        ctx.lineTo(startX, startY + height);
+        ctx.lineTo(startX + width, startY + height);
+        ctx.closePath();
+        ctx.fill();
+      }
+    });
+
+    fileLoader.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        canvasWidth.value = img.width;
+        canvasHeight.value = img.height;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    function saveImage() {
+      const link = document.createElement('a');
+      link.download = 'my-image.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
