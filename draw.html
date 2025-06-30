@@ -36,7 +36,8 @@
     button:hover {
       background-color: #777;
     }
-    input[type="number"] {
+    input[type="number"],
+    input[type="text"] {
       width: 80px;
       padding: 3px;
     }
@@ -55,6 +56,9 @@
     <button onclick="setMode('rect')">Rectangle</button>
     <button onclick="setMode('circle')">Circle</button>
     <button onclick="setMode('triangle')">Triangle</button>
+    <button onclick="setMode('text')">Text</button>
+    <input type="text" id="textInput" placeholder="Your text" />
+    <input type="number" id="textSize" value="20" min="10" max="100" />
     <button onclick="saveImage()">Save</button>
   </div>
 
@@ -68,6 +72,8 @@
     const fileLoader = document.getElementById('fileLoader');
     const canvasWidth = document.getElementById('canvasWidth');
     const canvasHeight = document.getElementById('canvasHeight');
+    const textInput = document.getElementById('textInput');
+    const textSize = document.getElementById('textSize');
 
     let isDrawing = false;
     let mode = 'brush';
@@ -96,6 +102,16 @@
     }
 
     canvas.addEventListener('mousedown', e => {
+      if (mode === 'text') {
+        const text = textInput.value.trim();
+        if (text) {
+          ctx.fillStyle = colorPicker.value;
+          ctx.font = `${textSize.value}px sans-serif`;
+          ctx.fillText(text, e.offsetX, e.offsetY);
+        }
+        return;
+      }
+
       isDrawing = true;
       [startX, startY] = [e.offsetX, e.offsetY];
       if (mode === 'brush') {
